@@ -1,0 +1,251 @@
+#!/system/bin/sh
+
+
+# configuration
+password=
+volume_dir=
+
+
+check_mount(){
+    if grep -q "^encfs $volume_mount " /proc/mounts; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+
+check_volume(){
+    # if $volume_supplied is a path
+    if [[ -d $volume_supplied ]]; then
+        basename=$(basename "$volume_supplied")
+        dirname=$(dirname "$volume_supplied")
+        if [[ -d $dirname/.${basename}_encfs ]]; then
+            volume_encfs="$dirname/.${basename}_encfs"
+            volume_mount=$volume_supplied
+        else
+            echo "ERROR: '$dirname/.${basename}_encfs' does not exist" >&2
+            exit 1
+        fi
+    # if $volume_supplied is a name
+    elif [[ -d $volume_dir/$volume_supplied ]]; then
+        if [[ -d $volume_dir/.${volume_supplied}_encfs ]]; then
+            volume_encfs="$volume_dir/.${volume_supplied}_encfs"
+            volume_mount="$volume_dir/$volume_supplied"
+        else
+            echo "ERROR: '$volume_dir/.${volume_supplied}_encfs' does not exist" >&2
+            exit 1
+        fi
+    else
+        echo "ERROR: Invalid volume name or path" >&2
+        echo "Could not locate '$volume_supplied' nor '$volume_dir/$volume_supplied'." >&2
+        exit 1
+    fi
+}
+
+
+init(){
+    if (( $# == 0 )); then
+        echo "ERROR: No arguments" >&2
+        see_usage
+        exit 1
+    elif (( $# == 1 )) && [[ $1 = -h || $1 = --help || $1 = help ]]; then
+        usage
+    elif (( $# >= 3 )); then
+        echo "ERROR: Too many arguments" >&2
+        see_usage
+        exit 1
+    elif [[ ! -d $volume_dir ]]; then
+        echo "ERROR: Volume directory '$volume_dir' does not exist!" >&2
+        echo "Please update the value to 'volume_dir' in '$0'" >&2
+        exit 1
+    fi
+
+    if [[ $1 = info || $1 = mount || $1 = shutdown || $1 = status || $1 = unmount ]]; then
+        if [[ -n $2 ]]; then
+            volume_supplied=$2
+            check_volume
+        else
+            echo "ERROR: Missing volume name or path" >&2
+            exit 1
+        fi
+    elif [[ $1 = info_all || $1 = mount_all || $1 = shutdown_all || $1 = status_all || $1 = unmount_all ]]; then
+        if [[ -n $2 ]]; then
+            echo "ERROR: Volume name or path is not necessary for batch operations" >&2
+            exit 1
+        fi
+    else
+        echo "ERROR: Invalid command" >&2
+        see_usage
+        exit 1
+    fi
+
+    if [[ ($1 = mount || $1 = mount_all) && -z $password ]]; then
+        echo "ERROR: 'password' is not set!" >&2
+        echo "Please update the value to 'password' in '$0'" >&2
+        exit 1
+    fi
+}
+
+main(){
+    init "$@"
+
+    if [[ $1 = info ]]; then
+        output=$(grep "^encfs $volume_mount " /proc/mounts)
+        if [[ -n $output ]]; then
+            echo "$output"
+            exit 0
+        else
+            echo "ERROR: '$volume_mount' is not mounted" >&2
+            exit 1
+        fi
+    elif [[ $1 = mount ]]; then
+        if check_mount; then
+            echo "ERROR: Skipping '$volume_mount' (it is already mounted)" >&2
+            exit 1
+        else
+            echo "$password" | encfs -S "$volume_encfs" "$volume_mount" -o allow_other
+            if check_mount; then
+                echo "SUCCESS: Mounted '$volume_mount'"
+                exit 0
+            else
+                echo "ERROR: Failed to mount '$volume_mount'" >&2
+                exit 1
+            fi
+        fi
+    elif [[ $1 = shutdown ]]; then
+        if check_mount; then
+            fuser -mk "$volume_mount"
+            umount "$volume_mount"
+            if check_mount; then
+                echo "ERROR: Failed to unmount '$volume_mount'" >&2
+                exit 1
+            else
+                echo "SUCCESS: Unmounted '$volume_mount'"
+                exit 0
+            fi
+        else
+            echo "Skipping '$volume_mount' (it is already unmounted)"
+            exit 0
+        fi
+    elif [[ $1 = status ]]; then
+        if grep -q "^encfs $volume_mount " /proc/mounts; then
+            echo 'mounted'
+        else
+            echo 'not mounted'
+        fi
+        exit 0
+    elif [[ $1 = unmount ]]; then
+        if check_mount; then
+            umount "$volume_mount"
+            if check_mount; then
+                echo "ERROR: Failed to unmount '$volume_mount'" >&2
+                exit 1
+            else
+                echo "SUCCESS: Unmounted '$volume_mount'"
+                exit 0
+            fi
+        else
+            echo "Skipping '$volume_mount' (it is already unmounted)"
+            exit 0
+        fi
+    elif [[ $1 = info_all ]]; then
+        output=$(grep "^encfs $volume_dir" /proc/mounts)
+        if [[ -n $output ]]; then
+            echo "$output"
+        else
+            echo "no volumes mounted"
+        fi
+        exit 0
+    elif [[ $1 = mount_all ]]; then
+        for folder in ${volume_dir}/.*_encfs; do
+            name_encfs="${folder##*/}"
+            name_volume=$(echo "$name_encfs" | sed 's/\.\(.*\)_encfs/\1/')
+            volume_encfs="$volume_dir/$name_encfs"
+            volume_mount="$volume_dir/$name_volume"
+            [[ ! -d $volume_encfs || ! -d $volume_mount ]] && continue
+            if check_mount; then
+                echo "ERROR: Skipping '$name_volume' (it is already mounted)" >&2
+            else
+                echo "$password" | encfs -S "$volume_encfs" "$volume_mount" -o allow_other
+                if check_mount; then
+                    echo "SUCCESS: Mounted '$name_volume'"
+                    let s++
+                else
+                    echo "ERROR: Failed to mount '$name_volume'" >&2
+                    let f++
+                fi
+            fi
+        done
+        if [[ $f -gt 0 || -z $s ]]; then
+            exit 1
+        else
+            exit 0
+        fi
+    elif [[ $1 = shutdown_all ]]; then
+        output=$(grep "^encfs $volume_dir/" /proc/mounts | cut -d' ' -f2)
+        if [[ -z $output ]]; then
+            echo "Nothing to do!"
+            exit 0
+        fi
+        echo "$output" | while IFS= read -r folder; do
+            name_volume="${folder##*/}"
+            fuser -mk "$volume_dir/$name_volume"
+            umount "$volume_dir/$name_volume"
+        done
+        if grep -q "^encfs $volume_dir/" /proc/mounts; then
+            echo "ERROR: Failed to unmount all volumes" >&2
+            exit 1
+        else
+            echo "SUCCESS: Unmounted all volumes"
+            exit 0
+        fi
+    elif [[ $1 = status_all ]]; then
+        output=$(grep "^encfs $volume_dir" /proc/mounts | cut -d' ' -f2 | awk -F'/' '{print $NF}')
+        if [[ -n $output ]]; then
+            echo "$output"
+        else
+            echo "no volumes mounted"
+        fi
+        exit 0
+    elif [[ $1 = unmount_all ]]; then
+        output=$(grep "^encfs $volume_dir/" /proc/mounts | cut -d' ' -f2)
+        if [[ -z $output ]]; then
+            echo "Nothing to do!"
+            exit 0
+        fi
+        echo "$output" | while IFS= read -r folder; do
+            volume_mount=$folder
+            name_volume="${folder##*/}"
+            umount "$volume_mount"
+            if check_mount; then
+                echo "ERROR: Failed to unmount '$name_volume'" >&2
+            else
+                echo "SUCCESS: Unmounted '$name_volume'"
+            fi
+        done
+        if grep -q "^encfs $volume_dir/" /proc/mounts; then
+            exit 1
+        else
+            exit 0
+        fi
+    fi
+}
+
+
+see_usage(){
+    echo "Try '${0##*/} --help' for more information." >&2
+}
+
+
+usage(){
+    echo "Usage: ${0##*/} <command> [volume]"
+    echo "Batch Commands: info_all | mount_all | shutdown_all | status_all | unmount_all"
+    echo "Volume Commands: info | mount | shutdown | status | unmount"
+    echo
+    echo "Volume Directory: $volume_dir"
+    exit 0
+}
+
+
+main "$@"
