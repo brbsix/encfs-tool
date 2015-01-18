@@ -2,8 +2,8 @@
 
 
 # configuration
-password=
-volume_dir=
+PASSWORD=
+VOLUME_DIR=
 
 
 check_mount(){
@@ -28,28 +28,23 @@ check_volume(){
             exit 1
         fi
     # if $volume_supplied is a name
-    elif [[ -d $volume_dir/$volume_supplied ]]; then
-        if [[ -d $volume_dir/.${volume_supplied}_encfs ]]; then
-            volume_encfs="$volume_dir/.${volume_supplied}_encfs"
-            volume_mount="$volume_dir/$volume_supplied"
+    elif [[ -d $VOLUME_DIR/$volume_supplied ]]; then
+        if [[ -d $VOLUME_DIR/.${volume_supplied}_encfs ]]; then
+            volume_encfs="$VOLUME_DIR/.${volume_supplied}_encfs"
+            volume_mount="$VOLUME_DIR/$volume_supplied"
         else
-            echo "ERROR: '$volume_dir/.${volume_supplied}_encfs' does not exist" >&2
+            echo "ERROR: '$VOLUME_DIR/.${volume_supplied}_encfs' does not exist" >&2
             exit 1
         fi
     else
         echo "ERROR: Invalid volume name or path" >&2
-        echo "Could not locate '$volume_supplied' nor '$volume_dir/$volume_supplied'." >&2
+        echo "Could not locate '$volume_supplied' nor '$VOLUME_DIR/$volume_supplied'." >&2
         exit 1
     fi
 }
 
 
 init(){
-    if [[ -z $password ]]; then
-        error "No password"
-        exit 1
-    fi
-
     if (( $# == 0 )); then
         echo "ERROR: No arguments" >&2
         see_usage
@@ -60,9 +55,9 @@ init(){
         echo "ERROR: Too many arguments" >&2
         see_usage
         exit 1
-    elif [[ ! -d $volume_dir ]]; then
-        echo "ERROR: Volume directory '$volume_dir' does not exist!" >&2
-        echo "Please update the value to 'volume_dir' in '$0'" >&2
+    elif [[ ! -d $VOLUME_DIR ]]; then
+        echo "ERROR: Volume directory '$VOLUME_DIR' does not exist!" >&2
+        echo "Please update the value to 'VOLUME_DIR' in '$0'" >&2
         exit 1
     fi
 
@@ -85,9 +80,9 @@ init(){
         exit 1
     fi
 
-    if [[ ($1 = mount || $1 = mount_all) && -z $password ]]; then
-        echo "ERROR: 'password' is not set!" >&2
-        echo "Please update the value to 'password' in '$0'" >&2
+    if [[ ($1 = mount || $1 = mount_all) && -z $PASSWORD ]]; then
+        echo "ERROR: 'PASSWORD' is not set!" >&2
+        echo "Please update the value to 'PASSWORD' in '$0'" >&2
         exit 1
     fi
 }
@@ -109,7 +104,7 @@ main(){
             echo "ERROR: Skipping '$volume_mount' (it is already mounted)" >&2
             exit 1
         else
-            echo "$password" | encfs -S "$volume_encfs" "$volume_mount" -o allow_other
+            echo "$PASSWORD" | encfs -S "$volume_encfs" "$volume_mount" -o allow_other
             if check_mount; then
                 echo "SUCCESS: Mounted '$volume_mount'"
                 exit 0
@@ -155,7 +150,7 @@ main(){
             exit 0
         fi
     elif [[ $1 = info_all ]]; then
-        output=$(grep "^encfs $volume_dir" /proc/mounts)
+        output=$(grep "^encfs $VOLUME_DIR" /proc/mounts)
         if [[ -n $output ]]; then
             echo "$output"
         else
@@ -163,16 +158,16 @@ main(){
         fi
         exit 0
     elif [[ $1 = mount_all ]]; then
-        for folder in ${volume_dir}/.*_encfs; do
+        for folder in ${VOLUME_DIR}/.*_encfs; do
             name_encfs="${folder##*/}"
             name_volume=$(echo "$name_encfs" | sed 's/\.\(.*\)_encfs/\1/')
-            volume_encfs="$volume_dir/$name_encfs"
-            volume_mount="$volume_dir/$name_volume"
+            volume_encfs="$VOLUME_DIR/$name_encfs"
+            volume_mount="$VOLUME_DIR/$name_volume"
             [[ ! -d $volume_encfs || ! -d $volume_mount ]] && continue
             if check_mount; then
                 echo "ERROR: Skipping '$name_volume' (it is already mounted)" >&2
             else
-                echo "$password" | encfs -S "$volume_encfs" "$volume_mount" -o allow_other
+                echo "$PASSWORD" | encfs -S "$volume_encfs" "$volume_mount" -o allow_other
                 if check_mount; then
                     echo "SUCCESS: Mounted '$name_volume'"
                     let s++
@@ -188,17 +183,17 @@ main(){
             exit 0
         fi
     elif [[ $1 = shutdown_all ]]; then
-        output=$(grep "^encfs $volume_dir/" /proc/mounts | cut -d' ' -f2)
+        output=$(grep "^encfs $VOLUME_DIR/" /proc/mounts | cut -d' ' -f2)
         if [[ -z $output ]]; then
             echo "Nothing to do!"
             exit 0
         fi
         echo "$output" | while IFS= read -r folder; do
             name_volume="${folder##*/}"
-            fuser -mk "$volume_dir/$name_volume"
-            umount "$volume_dir/$name_volume"
+            fuser -mk "$VOLUME_DIR/$name_volume"
+            umount "$VOLUME_DIR/$name_volume"
         done
-        if grep -q "^encfs $volume_dir/" /proc/mounts; then
+        if grep -q "^encfs $VOLUME_DIR/" /proc/mounts; then
             echo "ERROR: Failed to unmount all volumes" >&2
             exit 1
         else
@@ -206,7 +201,7 @@ main(){
             exit 0
         fi
     elif [[ $1 = status_all ]]; then
-        output=$(grep "^encfs $volume_dir" /proc/mounts | cut -d' ' -f2 | awk -F'/' '{print $NF}')
+        output=$(grep "^encfs $VOLUME_DIR" /proc/mounts | cut -d' ' -f2 | awk -F'/' '{print $NF}')
         if [[ -n $output ]]; then
             echo "$output"
         else
@@ -214,7 +209,7 @@ main(){
         fi
         exit 0
     elif [[ $1 = unmount_all ]]; then
-        output=$(grep "^encfs $volume_dir/" /proc/mounts | cut -d' ' -f2)
+        output=$(grep "^encfs $VOLUME_DIR/" /proc/mounts | cut -d' ' -f2)
         if [[ -z $output ]]; then
             echo "Nothing to do!"
             exit 0
@@ -229,7 +224,7 @@ main(){
                 echo "SUCCESS: Unmounted '$name_volume'"
             fi
         done
-        if grep -q "^encfs $volume_dir/" /proc/mounts; then
+        if grep -q "^encfs $VOLUME_DIR/" /proc/mounts; then
             exit 1
         else
             exit 0
@@ -241,9 +236,9 @@ main(){
 prompt_password(){
     local interpreter=$(basename "$(ps -o cmd= $$ | awk '{print $1}')")
     if [[ $interpreter = bash ]]; then
-        read -p "Please enter password: " password
+        read -p "Please enter password: " PASSWORD
     elif [[ $interpreter = mksh ]]; then
-        read password?'Please enter password: '
+        read PASSWORD?'Please enter password: '
     else
         error "Incompatible shell (please use bash or mksh)"
         exit 1
@@ -259,26 +254,25 @@ usage(){
     echo "Usage: ${0##*/} <command> [volume]"
     echo "Batch Commands: info_all | mount_all | shutdown_all | status_all | unmount_all"
     echo "Volume Commands: info | mount | shutdown | status | unmount"
+    echo "Password Options: --file FILE | --prompt | --stdin"
     echo
-    echo "Volume Directory: $volume_dir"
+    echo "Volume Directory: $VOLUME_DIR"
     exit 0
 }
 
 
-if [[ $1 = --stdin ]]; then
-    password=$(cat /dev/stdin)
-    shift
-elif [[ $1 = --file ]]; then
+if [[ $1 = --file ]]; then
     if [[ -n $2 ]]; then
-        password=$(cat "$2") 2>/dev/null
+        PASSWORD=$(cat "$2") 2>/dev/null
         shift
     fi
     shift
-elif [[ $1 = --prompt ]]; then
+elif [[ $1 = --stdin ]]; then
+    PASSWORD=$(cat /dev/stdin)
+    shift
+elif [[ $1 = --prompt || ( -z $PASSWORD && ( $1 = mount || $1 = mount_all ))]]; then
     prompt_password
     shift
-elif [[ -z $password ]]; then
-    prompt_password
 fi
 
 main "$@"
