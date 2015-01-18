@@ -1,4 +1,4 @@
-#/system/bin/sh
+#!/system/bin/sh
 
 
 # configuration
@@ -240,10 +240,10 @@ main(){
 
 
 prompt_password(){
-    local interpreter=$(basename "$(ps -o cmd= $$ | awk '{print $1}')")
+    local interpreter=$(basename "$(awk 'NR==1 {print $1}' /proc/$$/cmdline)")
     if [[ $interpreter = bash ]]; then
         read -p "Please enter password: " PASSWORD
-    elif [[ $interpreter = mksh ]]; then
+    elif [[ $interpreter = mksh || $interpreter = sh ]]; then
         read PASSWORD?'Please enter password: '
     else
         error "Incompatible shell (please use bash or mksh)"
@@ -274,7 +274,16 @@ if [[ $1 = --file ]]; then
     fi
     shift
 elif [[ $1 = --stdin ]]; then
-    PASSWORD=$(cat /dev/stdin)
+    if [[ -e /dev/stdin ]]; then
+        echo "reading from /dev/stdin"
+        PASSWORD=$(cat /dev/stdin)
+    elif [[ -e /dev/fd/0 ]]; then
+        echo "reading from /dev/fd0"
+        PASSWORD=$(cat /dev/fd/0)
+    else
+        error "Unable to locate standard input"
+        exit 1
+    fi
     shift
 elif [[ $1 = --prompt ]]; then
     prompt_password
