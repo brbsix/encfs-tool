@@ -96,7 +96,7 @@ main(){
     init "$@"
 
     if [[ $1 = info ]]; then
-        output=$(grep "^encfs $volume_mount " /proc/mounts)
+        local output=$(grep "^encfs $volume_mount " /proc/mounts)
         if [[ -n $output ]]; then
             echo "$output"
             exit 0
