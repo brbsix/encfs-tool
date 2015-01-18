@@ -1,6 +1,6 @@
 # encfs-tool
 
-Shell script to easily interact with EncFS volumes. This was created for use on Android's mksh (and bash), but should also work on similar *nix shells.
+Shell script to easily interact with EncFS volumes. This was created for use on Android's mksh (and bash), but should work on other *nix platforms.
 
 This script was created to fufill a personal use-case, namely to mount multiple EncFS volumes at once (generally via init script at startup) and to unmount (forcibly if necessary) multiple volumes upon poweroff or triggering event.
 
