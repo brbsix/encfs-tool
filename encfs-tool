@@ -45,6 +45,11 @@ check_volume(){
 
 
 init(){
+    if [[ -z $password ]]; then
+        error "No password"
+        exit 1
+    fi
+
     if (( $# == 0 )); then
         echo "ERROR: No arguments" >&2
         see_usage
@@ -233,6 +238,18 @@ main(){
 }
 
 
+prompt_password(){
+    local interpreter=$(basename "$(ps -o cmd= $$ | awk '{print $1}')")
+    if [[ $interpreter = bash ]]; then
+        read -p "Please enter password: " password
+    elif [[ $interpreter = mksh ]]; then
+        read password?'Please enter password: '
+    else
+        error "Incompatible shell (please use bash or mksh)"
+        exit 1
+    fi
+}
+
 see_usage(){
     echo "Try '${0##*/} --help' for more information." >&2
 }
@@ -247,5 +264,21 @@ usage(){
     exit 0
 }
 
+
+if [[ $1 = --stdin ]]; then
+    password=$(cat /dev/stdin)
+    shift
+elif [[ $1 = --file ]]; then
+    if [[ -n $2 ]]; then
+        password=$(cat "$2") 2>/dev/null
+        shift
+    fi
+    shift
+elif [[ $1 = --prompt ]]; then
+    prompt_password
+    shift
+elif [[ -z $password ]]; then
+    prompt_password
+fi
 
 main "$@"
