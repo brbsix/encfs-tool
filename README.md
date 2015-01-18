@@ -34,6 +34,20 @@ If you want to use batch commands, open encfs-tool in an editor and set VOLUME_D
 ```export PATH="$PATH:/data/local/bin"```
 
 
+Configuration
+-----
+
+**NOTE: This script assumes that mount and volume names follow a prescribed format.**
+
+I.e. For a mount folder named `Folder` the EncFS volume is appropriately named `.Folder_encfs`
+
+If all of your EncFS volumes are located in one directory, set `VOLUME_DIR` at the top of the script to that path.
+
+Your mount passphrase/password can be supplied a number of ways. For automated use, it can be set at the top of the script under `PASSWORD` or stored in a file and passed as an argument `encfs-tool --file passfile.txt mount_all` (though this is certainly unadvisable unless you have an encrypted filesystem). Your password can also be passed in via stdin, i.e. `echo "password" | encfs-tool --stdin mount_all` (though this has it's issues as well).
+
+The password will be prompted for interactively if PASSWORD is unset or the `--prompt` option is used.
+
+
 Usage
 -----
 
@@ -48,24 +62,16 @@ su
 encfs-tool mount_all
 ```
 
-**NOTE: This script assumes that mount and volume names follow a prescribed format.**
+If ```VOLUME_DIR``` is set, then you can run commands as follows:
 
-I.e. For a mount folder named `Folder` the EncFS volume is appropriately named `.Folder_encfs`
-
-If all of your EncFS volumes are located in one directory, you can edit the variable ```VOLUME_DIR``` at the top of the script.
-
-Then you can call a command on all volumes in that directory:
-
-```encfs-tool info_all```
-
-Or you can call a command on one volume in that directory by it's name:
-
-```encfs-tool info Folder```
+```
+encfs-tool info_all
+encfs-tool info Folder
+```
 
 If your EncFS volumes are spread out in various locations (or ```VOLUME_DIR``` is unset), you can run commands as follows:
 
 ```
 encfs-tool info_all /path/to/volumes/
-
 encfs-tool info /path/to/volumes/Folder
 ```
