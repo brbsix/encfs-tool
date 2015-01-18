@@ -28,8 +28,8 @@ check_volume(){
             exit 1
         fi
     # if $volume_supplied is a name
-    check_volume_dir
     elif [[ -d $VOLUME_DIR/$volume_supplied ]]; then
+        check_volume_dir
         if [[ -d $VOLUME_DIR/.${volume_supplied}_encfs ]]; then
             volume_encfs="$VOLUME_DIR/.${volume_supplied}_encfs"
             volume_mount="$VOLUME_DIR/$volume_supplied"
