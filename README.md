@@ -24,7 +24,7 @@ Copy encfs-tool to your bin folder and then mark as executable.
 ```
 su
 mv encfs-tool /data/local/bin
-chmod a+x /data/local/bin/encfs-tool
+chmod 0755 /data/local/bin/encfs-tool
 ```
 
 If you want to use batch commands, open encfs-tool in an editor and set VOLUME_DIR to the path where your EncFS volumes are stored.
