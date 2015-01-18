@@ -1,4 +1,4 @@
-#!/system/bin/sh
+#/system/bin/sh
 
 
 # configuration
@@ -28,6 +28,7 @@ check_volume(){
             exit 1
         fi
     # if $volume_supplied is a name
+    check_volume_dir
     elif [[ -d $VOLUME_DIR/$volume_supplied ]]; then
         if [[ -d $VOLUME_DIR/.${volume_supplied}_encfs ]]; then
             volume_encfs="$VOLUME_DIR/.${volume_supplied}_encfs"
@@ -44,6 +45,15 @@ check_volume(){
 }
 
 
+check_volume_dir(){
+    if [[ ! -d $VOLUME_DIR ]]; then
+        echo "ERROR: 'VOLUME_DIR' has not been set!" >&2
+        echo "Please update the value of 'VOLUME_DIR' in '$0' or include it as an argument." >&2
+        exit 1
+    fi
+}
+
+
 init(){
     if (( $# == 0 )); then
         echo "ERROR: No arguments" >&2
@@ -54,10 +64,6 @@ init(){
     elif (( $# >= 3 )); then
         echo "ERROR: Too many arguments" >&2
         see_usage
-        exit 1
-    elif [[ ! -d $VOLUME_DIR ]]; then
-        echo "ERROR: Volume directory '$VOLUME_DIR' does not exist!" >&2
-        echo "Please update the value to 'VOLUME_DIR' in '$0'" >&2
         exit 1
     fi
 
@@ -71,9 +77,9 @@ init(){
         fi
     elif [[ $1 = info_all || $1 = mount_all || $1 = shutdown_all || $1 = status_all || $1 = unmount_all ]]; then
         if [[ -n $2 ]]; then
-            echo "ERROR: Volume name or path is not necessary for batch operations" >&2
-            exit 1
+            VOLUME_DIR=$2
         fi
+        check_volume_dir
     else
         echo "ERROR: Invalid command" >&2
         see_usage
@@ -256,7 +262,7 @@ usage(){
     echo "Volume Commands: info | mount | shutdown | status | unmount"
     echo "Password Options: --file FILE | --prompt | --stdin"
     echo
-    echo "Volume Directory: $VOLUME_DIR"
+    echo "Volume Directory: ${VOLUME_DIR:-NOT SET}"
     exit 0
 }
 
