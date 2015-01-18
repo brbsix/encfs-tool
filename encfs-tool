@@ -276,9 +276,11 @@ if [[ $1 = --file ]]; then
 elif [[ $1 = --stdin ]]; then
     PASSWORD=$(cat /dev/stdin)
     shift
-elif [[ $1 = --prompt || ( -z $PASSWORD && ( $1 = mount || $1 = mount_all ))]]; then
+elif [[ $1 = --prompt ]]; then
     prompt_password
     shift
+elif [[ -z $PASSWORD && ( $1 = mount || $1 = mount_all )]]; then
+    prompt_password
 fi
 
 main "$@"
