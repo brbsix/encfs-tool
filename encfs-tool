@@ -134,7 +134,7 @@ main(){
             exit 0
         fi
     elif [[ $1 = status ]]; then
-        if grep -q "^encfs $volume_mount " /proc/mounts; then
+        if check_mount; then
             echo 'mounted'
         else
             echo 'not mounted'
