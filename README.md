@@ -14,7 +14,7 @@ Features
 * run commands on multiple volumes (in the VOLUME_DIR)
 * check whether volumes are mounted or not
 * mount and unmount volumes
-* force-unmount volumes (killing associated processes first)
+* shutdown command to force-unmount volumes (killing associated processes first)
 
 Installation
 -----
@@ -45,7 +45,7 @@ If all of your EncFS volumes are located in one directory, set `VOLUME_DIR` at t
 
 Your mount passphrase/password can be supplied a number of ways. For automated use, it can be set at the top of the script under `PASSWORD` or stored in a file and passed as an argument `encfs-tool --file passfile.txt mount_all` (though this is certainly unadvisable unless you have an encrypted filesystem). Your password can also be passed in via stdin, i.e. `echo "password" | encfs-tool --stdin mount_all` (though this has it's issues as well).
 
-The password will be prompted for interactively if PASSWORD is unset or the `--prompt` option is used.
+The password will be prompted for interactively if `PASSWORD` is unset or the `--prompt` option is used.
 
 
 Usage
@@ -55,7 +55,7 @@ To get full usage information:
 
 ```encfs-tool help```
 
-Be sure to run mount and unmount commands as superuser:
+Be sure to run mount and shutdown/unmount commands as superuser:
 
 ```
 su
