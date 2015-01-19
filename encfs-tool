@@ -276,16 +276,7 @@ if [[ $1 = --file ]]; then
     fi
     shift
 elif [[ $1 = --stdin ]]; then
-    # stdin for Linux
-    if [[ -e /dev/stdin ]]; then
-        PASSWORD=$(cat /dev/stdin)
-    # stdin for Android
-    elif [[ -e /dev/fd/0 ]]; then
-        PASSWORD=$(cat /dev/fd/0)
-    else
-        error "Unable to locate standard input"
-        exit 1
-    fi
+    read -r PASSWORD
     shift
 elif [[ $1 = --prompt ]]; then
     prompt_password
