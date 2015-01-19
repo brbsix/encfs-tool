@@ -269,7 +269,9 @@ usage(){
 
 if [[ $1 = --file ]]; then
     if [[ -n $2 ]]; then
-        PASSWORD=$(cat "$2") 2>/dev/null
+        # note use of cat because $(< "$2") will kill the
+        # process if it fails. We could use read though...
+        PASSWORD=$(cat "$2" 2>/dev/null)
         shift
     fi
     shift
