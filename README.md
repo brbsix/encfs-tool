@@ -75,3 +75,10 @@ If your EncFS volumes are spread out in various locations (or ```VOLUME_DIR``` i
 encfs-tool info_all /path/to/volumes/
 encfs-tool info /path/to/volumes/Folder
 ```
+
+License
+-------
+
+Copyright (c) 2015 Six (brbsix@gmail.com).
+
+Licensed under the GPLv3 license.
