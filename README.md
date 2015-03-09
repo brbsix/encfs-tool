@@ -17,7 +17,7 @@ Features
 * shutdown command to force-unmount volumes (killing associated processes first)
 
 Installation
------
+------------
 
 Copy encfs-tool to your bin folder and then mark as executable.
 
@@ -35,7 +35,7 @@ If you want to use batch commands, open encfs-tool in an editor and set VOLUME_D
 
 
 Configuration
------
+-------------
 
 **NOTE: This script assumes that mount and volume names follow a prescribed format.**
 
