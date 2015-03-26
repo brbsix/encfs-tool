@@ -6,7 +6,6 @@ This script was created to fufill a personal use-case, namely to mount multiple 
 
 Other android apps such as Cryptonite facilitate the use of single EncFS volumes, but I know of no other tool that allows batch commands.
 
-
 Features
 --------
 
@@ -21,17 +20,15 @@ Installation
 
 Copy encfs-tool to your bin folder and then mark as executable.
 
-```
-su
-mv encfs-tool /data/local/bin
-chmod 0755 /data/local/bin/encfs-tool
-```
+    su
+    cp encfs-tool /data/local/bin
+    chmod 0755 /data/local/bin/encfs-tool
 
 If you want to use batch commands, open encfs-tool in an editor and set VOLUME_DIR to the path where your EncFS volumes are stored.
 
 *NOTE: On Android, you may need to add /data/local/bin to your PATH. This involves editing your shell's rc file. If you are using the default mksh shell, it is located at /system/etc/mkshrc. For Bash, it is most likely at /system/etc/bash/bashrc. Append the following to the end of the file:*
 
-```export PATH="$PATH:/data/local/bin"```
+    export PATH="$PATH:/data/local/bin"
 
 
 Configuration
@@ -53,28 +50,23 @@ Usage
 
 To get full usage information:
 
-```encfs-tool help```
+    encfs-tool help
 
 Be sure to run mount and shutdown/unmount commands as superuser:
 
-```
-su
-encfs-tool mount_all
-```
+    su
+    encfs-tool mount_all
 
-If ```VOLUME_DIR``` is set, then you can run commands as follows:
+If `VOLUME_DIR` is set, then you can run commands as follows:
 
-```
-encfs-tool info_all
-encfs-tool info Folder
-```
 
-If your EncFS volumes are spread out in various locations (or ```VOLUME_DIR``` is unset), you can run commands as follows:
+    encfs-tool info_all
+    encfs-tool info Folder
 
-```
-encfs-tool info_all /path/to/volumes/
-encfs-tool info /path/to/volumes/Folder
-```
+If your EncFS volumes are spread out in various locations (or `VOLUME_DIR` is unset), you can run commands as follows:
+
+    encfs-tool info_all /path/to/volumes/
+    encfs-tool info /path/to/volumes/Folder
 
 License
 -------
