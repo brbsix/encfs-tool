@@ -246,7 +246,7 @@ prompt_password(){
     elif [[ $interpreter = mksh || $interpreter = sh ]]; then
         read PASSWORD?'Please enter password: '
     else
-        error "Incompatible shell (please use bash or mksh)"
+        echo "ERROR: Incompatible shell (please use bash or mksh)" >&2
         exit 1
     fi
 }
