@@ -7,21 +7,17 @@ VOLUME_DIR=
 
 
 check_mount(){
-    if grep -q "^encfs $volume_mount " /proc/mounts; then
-        return 0
-    else
-        return 1
-    fi
+    grep -q "^encfs $volume_mount " /proc/mounts
 }
 
 
 check_volume(){
     # if $volume_supplied is a path
     if [[ -d $volume_supplied ]]; then
-        basename=$(basename "$volume_supplied")
+        basename=${volume_supplied##*/}
         dirname=$(dirname "$volume_supplied")
         if [[ -d $dirname/.${basename}_encfs ]]; then
-            volume_encfs="$dirname/.${basename}_encfs"
+            volume_encfs=$dirname/.${basename}_encfs
             volume_mount=$volume_supplied
         else
             echo "ERROR: '$dirname/.${basename}_encfs' does not exist" >&2
@@ -31,8 +27,8 @@ check_volume(){
     elif [[ -d $VOLUME_DIR/$volume_supplied ]]; then
         check_volume_dir
         if [[ -d $VOLUME_DIR/.${volume_supplied}_encfs ]]; then
-            volume_encfs="$VOLUME_DIR/.${volume_supplied}_encfs"
-            volume_mount="$VOLUME_DIR/$volume_supplied"
+            volume_encfs=$VOLUME_DIR/.${volume_supplied}_encfs
+            volume_mount=$VOLUME_DIR/$volume_supplied
         else
             echo "ERROR: '$VOLUME_DIR/.${volume_supplied}_encfs' does not exist" >&2
             exit 1
@@ -165,10 +161,10 @@ main(){
         exit 0
     elif [[ $1 = mount_all ]]; then
         for folder in ${VOLUME_DIR}/.*_encfs; do
-            name_encfs="${folder##*/}"
+            name_encfs=${folder##*/}
             name_volume=$(echo "$name_encfs" | sed 's/\.\(.*\)_encfs/\1/')
-            volume_encfs="$VOLUME_DIR/$name_encfs"
-            volume_mount="$VOLUME_DIR/$name_volume"
+            volume_encfs=$VOLUME_DIR/$name_encfs
+            volume_mount=$VOLUME_DIR/$name_volume
             [[ ! -d $volume_encfs || ! -d $volume_mount ]] && continue
             if check_mount; then
                 echo "ERROR: Skipping '$name_volume' (it is already mounted)" >&2
@@ -176,10 +172,10 @@ main(){
                 echo "$PASSWORD" | encfs -S "$volume_encfs" "$volume_mount" -o allow_other
                 if check_mount; then
                     echo "SUCCESS: Mounted '$name_volume'"
-                    let s++
+                    ((++s))
                 else
                     echo "ERROR: Failed to mount '$name_volume'" >&2
-                    let f++
+                    ((++f))
                 fi
             fi
         done
@@ -189,15 +185,14 @@ main(){
             exit 0
         fi
     elif [[ $1 = shutdown_all ]]; then
-        output=$(grep "^encfs $VOLUME_DIR/" /proc/mounts | cut -d' ' -f2)
+        output=$(grep "^encfs $VOLUME_DIR/" /proc/mounts | awk '{print $2}')
         if [[ -z $output ]]; then
             echo "Nothing to do!"
             exit 0
         fi
-        echo "$output" | while IFS= read -r folder; do
-            name_volume="${folder##*/}"
-            fuser -mk "$VOLUME_DIR/$name_volume"
-            umount "$VOLUME_DIR/$name_volume"
+        echo "$output" | while IFS= read -r path; do
+            fuser -mk "$path"
+            umount "$path"
         done
         if grep -q "^encfs $VOLUME_DIR/" /proc/mounts; then
             echo "ERROR: Failed to unmount all volumes" >&2
@@ -207,7 +202,8 @@ main(){
             exit 0
         fi
     elif [[ $1 = status_all ]]; then
-        output=$(grep "^encfs $VOLUME_DIR" /proc/mounts | cut -d' ' -f2 | awk -F'/' '{print $NF}')
+        # get the basenames of all mounted volumes
+        output=$(grep "^encfs $VOLUME_DIR" /proc/mounts | awk '{sub("^.*/", "", $2); print $2}')
         if [[ -n $output ]]; then
             echo "$output"
         else
@@ -215,15 +211,15 @@ main(){
         fi
         exit 0
     elif [[ $1 = unmount_all ]]; then
-        output=$(grep "^encfs $VOLUME_DIR/" /proc/mounts | cut -d' ' -f2)
+        # get the paths of all mounted volumes
+        output=$(grep "^encfs $VOLUME_DIR/" /proc/mounts | awk '{print $2}')
         if [[ -z $output ]]; then
             echo "Nothing to do!"
             exit 0
         fi
-        echo "$output" | while IFS= read -r folder; do
-            volume_mount=$folder
-            name_volume="${folder##*/}"
-            umount "$volume_mount"
+        echo "$output" | while IFS= read -r path; do
+            name_volume="${path##*/}"
+            umount "$path"
             if check_mount; then
                 echo "ERROR: Failed to unmount '$name_volume'" >&2
             else
@@ -269,7 +265,7 @@ usage(){
 
 if [[ $1 = --file ]]; then
     if [[ -n $2 ]]; then
-        # note use of cat because $(< "$2") will kill the
+        # NOTE: Using cat because $(< "$2") will kill the
         # process if it fails. We could use read though...
         PASSWORD=$(cat "$2" 2>/dev/null)
         shift
