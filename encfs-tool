@@ -90,6 +90,8 @@ init(){
 }
 
 main(){
+    PROGRAM=${0##*/}
+
     init "$@"
 
     if [[ $1 = info ]]; then
@@ -248,12 +250,12 @@ prompt_password(){
 }
 
 see_usage(){
-    echo "Try '${0##*/} --help' for more information." >&2
+    echo "Try '$PROGRAM --help' for more information." >&2
 }
 
 
 usage(){
-    echo "Usage: ${0##*/} <command> [volume]"
+    echo "Usage: $PROGRAM COMMAND VOLUME"
     echo "Batch Commands: info_all | mount_all | shutdown_all | status_all | unmount_all"
     echo "Volume Commands: info | mount | shutdown | status | unmount"
     echo "Password Options: --file FILE | --prompt | --stdin"
