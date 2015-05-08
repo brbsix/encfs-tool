@@ -238,11 +238,11 @@ main(){
 
 
 prompt_password(){
-    local interpreter=$(basename "$(awk 'NR==1 {print $1}' /proc/$$/cmdline)")
-    if [[ $interpreter = bash ]]; then
-        read -p "Please enter password: " PASSWORD
-    elif [[ $interpreter = mksh || $interpreter = sh ]]; then
-        read PASSWORD?'Please enter password: '
+    local i=$(basename "$(readlink -f "$(awk '{print $1; exit}' /proc/$$/cmdline)")")
+    if [[ $i = bash ]]; then
+        read -rp 'Please enter password: ' PASSWORD
+    elif [[ $i = mksh ]]; then
+        read -r PASSWORD?'Please enter password: '
     else
         echo "ERROR: Incompatible shell (please use bash or mksh)" >&2
         exit 1
